@@ -1,7 +1,20 @@
 ---
 name: portainer
 description: Control Docker containers, stacks, and environments via Portainer API. List containers, start/stop/restart, view logs, inspect containers (docker inspect JSON), redeploy stacks from git, and manage environments (CRUD).
-metadata: {}
+version: 1.5.0
+platforms: [macos, linux]
+metadata:
+  hermes:
+    tags: [docker, portainer, containers, devops, deployment]
+    category: devops
+    requires_toolsets: [terminal]
+    config:
+      - key: PORTAINER_URL
+        description: "Portainer server URL (e.g. https://portainer.example.com:9443)"
+        default: ""
+      - key: PORTAINER_API_KEY
+        description: "Portainer API access token (e.g. ptr_...)"
+        default: ""
 ---
 
 # 🐳 Portainer Skill
