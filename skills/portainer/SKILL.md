@@ -98,7 +98,7 @@ The **Portainer Skill** gives you control over your Docker infrastructure throug
    PORTAINER_URL=https://your-portainer-server:9443
    PORTAINER_API_KEY=ptr_your_token_here
    ```
-   > The script auto-detects and loads `.env` from the project root (`scripts/../.env`). Environment variables take precedence over `.env` values.
+   > The script auto-detects and loads `.env` from the project root (the parent of `scripts/`). Environment variables take precedence over `.env` values.
 
 3. **Ready!** 🚀
 
