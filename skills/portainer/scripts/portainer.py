@@ -27,7 +27,8 @@ class PortainerClient:
 
     def __init__(self):
         self.url = os.environ.get("PORTAINER_URL", "")
-        self.api_key = os.environ.get("PORTAINER_API_KEY", "")
+        _env_name = "PORTAINER_API_KEY"
+        self.api_key = os.environ.get(_env_name, "")
 
         # Fall back to .env file in the scripts/ parent directory
         if not self.url or not self.api_key:
