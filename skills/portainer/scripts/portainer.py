@@ -58,6 +58,7 @@ class PortainerClient:
         if data is not None:
             if content_type == "application/json":
                 body = json.dumps(data).encode()
+                hdrs["Content-Type"] = "application/json"
             else:
                 body = urllib.parse.urlencode(data).encode()
                 hdrs["Content-Type"] = content_type
@@ -166,6 +167,80 @@ class PortainerClient:
             if net.get("Name") == name or net.get("Id") == name or net.get("Id", "").startswith(name):
                 return net["Id"]
         return None
+
+    def _request_raw(self, method, path, data=None):
+        """HTTP request returning raw bytes (for non-JSON responses)."""
+        hdrs = dict(self.headers)
+        body = None
+        if data is not None:
+            body = json.dumps(data).encode()
+            hdrs["Content-Type"] = "application/json"
+
+        req = urllib.request.Request(
+            f"{self.base}{path}",
+            data=body,
+            headers=hdrs,
+            method=method,
+        )
+        try:
+            with urllib.request.urlopen(req) as resp:
+                return resp.read()
+        except urllib.error.HTTPError as e:
+            b = e.read().decode(errors="replace")
+            try:
+                err = json.loads(b)
+                msg = err.get("message") or err.get("details") or err.get("error") or str(e)
+            except (json.JSONDecodeError, TypeError):
+                msg = b.strip() or str(e)
+            sys.exit(f"✗ {msg}")
+
+    def exec_run(self, endpoint, container, cmd, tty=False):
+        """Run a command inside a container (docker exec), return stdout/stderr."""
+        cid = self._ensure_container(endpoint, container)
+
+        # Step 1: Create exec instance
+        exec_config = {
+            "Cmd": cmd,
+            "AttachStdout": True,
+            "AttachStderr": True,
+            "Tty": tty,
+        }
+        result = self.post(
+            f"/endpoints/{endpoint}/docker/containers/{cid}/exec",
+            exec_config,
+        )
+        if not result or "Id" not in result:
+            sys.exit(f"✗ Failed to create exec instance: {result}")
+        exec_id = result["Id"]
+
+        # Step 2: Start exec and read multiplexed stream
+        start_config = {"Detach": False, "Tty": tty}
+        raw = self._request_raw(
+            "POST",
+            f"/endpoints/{endpoint}/docker/exec/{exec_id}/start",
+            start_config,
+        )
+
+        # Step 3: Parse Docker multiplexed stream
+        # Format per frame: 1-byte stream ID + 3-byte padding + 4-byte length (big-endian) + data
+        stdout = bytearray()
+        stderr = bytearray()
+        offset = 0
+        while offset + 8 <= len(raw):
+            stream_id = raw[offset]
+            frame_len = int.from_bytes(raw[offset+4:offset+8], "big")
+            offset += 8
+            frame_data = raw[offset:offset+frame_len]
+            offset += frame_len
+            if stream_id == 1:
+                stdout.extend(frame_data)
+            elif stream_id == 2:
+                stderr.extend(frame_data)
+            else:
+                # Non-standard stream or leftover data
+                stdout.extend(frame_data)
+
+        return bytes(stdout), bytes(stderr)
 
 def cmd_status(client, args):
     """Show Portainer version."""
@@ -659,79 +734,7 @@ def cmd_inspect(client, args):
     data = client.get(f"/endpoints/{args.endpoint}/docker/containers/{cid}/json")
     print(json.dumps(data, indent=2))
 
-    def _request_raw(self, method, path, data=None):
-        """HTTP request returning raw bytes (for non-JSON responses)."""
-        hdrs = dict(self.headers)
-        body = None
-        if data is not None:
-            body = json.dumps(data).encode()
-            hdrs["Content-Type"] = "application/json"
 
-        req = urllib.request.Request(
-            f"{self.base}{path}",
-            data=body,
-            headers=hdrs,
-            method=method,
-        )
-        try:
-            with urllib.request.urlopen(req) as resp:
-                return resp.read()
-        except urllib.error.HTTPError as e:
-            b = e.read().decode(errors="replace")
-            try:
-                err = json.loads(b)
-                msg = err.get("message") or err.get("details") or err.get("error") or str(e)
-            except (json.JSONDecodeError, TypeError):
-                msg = b.strip() or str(e)
-            sys.exit(f"✗ {msg}")
-
-    def exec_run(self, endpoint, container, cmd, tty=False):
-        """Run a command inside a container (docker exec), return stdout/stderr."""
-        cid = self._ensure_container(endpoint, container)
-
-        # Step 1: Create exec instance
-        exec_config = {
-            "Cmd": cmd,
-            "AttachStdout": True,
-            "AttachStderr": True,
-            "Tty": tty,
-        }
-        result = self.post(
-            f"/endpoints/{endpoint}/docker/containers/{cid}/exec",
-            exec_config,
-        )
-        if not result or "Id" not in result:
-            sys.exit(f"✗ Failed to create exec instance: {result}")
-        exec_id = result["Id"]
-
-        # Step 2: Start exec and read multiplexed stream
-        start_config = {"Detach": False, "Tty": tty}
-        raw = self._request_raw(
-            "POST",
-            f"/endpoints/{endpoint}/docker/exec/{exec_id}/start",
-            start_config,
-        )
-
-        # Step 3: Parse Docker multiplexed stream
-        # Format per frame: 1-byte stream ID + 3-byte padding + 4-byte length (big-endian) + data
-        stdout = bytearray()
-        stderr = bytearray()
-        offset = 0
-        while offset + 8 <= len(raw):
-            stream_id = raw[offset]
-            frame_len = int.from_bytes(raw[offset+4:offset+8], "big")
-            offset += 8
-            frame_data = raw[offset:offset+frame_len]
-            offset += frame_len
-            if stream_id == 1:
-                stdout.extend(frame_data)
-            elif stream_id == 2:
-                stderr.extend(frame_data)
-            else:
-                # Non-standard stream or leftover data
-                stdout.extend(frame_data)
-
-        return bytes(stdout), bytes(stderr)
 
 
 def cmd_container_create(client, args):
@@ -786,9 +789,9 @@ def cmd_container_create(client, args):
 
 def cmd_exec(client, args):
     """Run a command inside a container (docker exec)."""
-    if not args.command:
-        sys.exit("Usage: portainer.py exec <container> [--endpoint N] <command> [args...]")
-    stdout, stderr = client.exec_run(args.endpoint, args.container, args.command)
+    if not args.exec_cmd:
+        sys.exit("Usage: portainer.py exec [--endpoint N] <container> <command> [args...]")
+    stdout, stderr = client.exec_run(args.endpoint, args.container, args.exec_cmd)
     if stdout:
         sys.stdout.buffer.write(stdout)
         sys.stdout.buffer.flush()
@@ -1004,12 +1007,11 @@ def build_parser():
 
     # exec
     p = sub.add_parser("exec", help="Run a command inside a container (docker exec)")
-    p.add_argument("container", help="Container name")
     p.add_argument("--endpoint", "-e", type=int, default=4,
                    help="Endpoint ID (default: 4)")
-    p.add_argument("command", nargs="*", help="Command and arguments to run (e.g. ls -la /data)")
-
-
+    p.add_argument("container", help="Container name")
+    p.add_argument("exec_cmd", nargs=argparse.REMAINDER,
+                   help="Command and arguments to run (e.g. ls -la /data)")
 
     return parser
 
