@@ -1,7 +1,7 @@
 ---
 name: portainer
 description: Control Docker containers, stacks, and environments via Portainer API. List containers, start/stop/restart, view logs, inspect containers (docker inspect JSON), redeploy stacks from git, and manage environments (CRUD).
-version: 1.5.1
+version: 2.0.1
 platforms: [macos, linux]
 metadata:
   hermes:
