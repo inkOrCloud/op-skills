@@ -1,13 +1,13 @@
 ---
 name: portainer
 description: Control Docker containers, stacks, and environments via Portainer API. List containers, start/stop/restart, view logs, inspect containers (docker inspect JSON), redeploy stacks from git, and manage environments (CRUD).
-version: 2.0.1
+version: 2.1.0
 platforms: [macos, linux]
 metadata:
   hermes:
     tags: [docker, portainer, containers, devops, deployment]
     category: devops
-    requires_toolsets: [terminal]
+    requires_toolsets: [terminal, python]
     config:
       - key: PORTAINER_URL
         description: "Portainer server URL (e.g. https://portainer.example.com:9443)"
@@ -112,9 +112,22 @@ python3 scripts/portainer.py containers
 python3 scripts/portainer.py stacks
 ```
 
-> 💡 **Cross-platform**: Written in pure Python 3 with no external dependencies — works on Linux, macOS, and Windows WSL. No `curl` or `jq` required.
+> 💡 **Agent Note**: Written in pure Python 3 with no external dependencies. Do NOT use `curl` or raw HTTP requests — the `scripts/portainer.py` script handles auth, error handling, and output formatting for all Portainer operations.
 
 ---
+
+## 🤖 Agent Instructions
+
+**Always use the Python script for ALL Portainer operations.**
+
+This skill provides a single, authoritative CLI (`python3 scripts/portainer.py`) that wraps the Portainer REST API. You MUST follow these rules:
+
+1. **Do NOT construct `curl` commands** — the Python script handles authentication, endpoint routing, error handling, and JSON formatting automatically.
+2. **Do NOT call the Portainer REST API directly** — always delegate through `python3 scripts/portainer.py`.
+3. **Do NOT use `jq` or pipe to JSON processors** — the script already pretty-prints output and supports all filtering needs.
+4. **All operations** (listing containers, inspecting, logs, stack redeploy, etc.) have a corresponding script subcommand — look up the exact syntax in the reference docs below or run `python3 scripts/portainer.py --help`.
+
+> ⚠️ Using `curl` or raw HTTP calls bypasses error handling and is officially disallowed by this skill.
 
 ## 🛠️ Command Overview
 

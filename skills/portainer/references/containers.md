@@ -68,12 +68,14 @@ python3 scripts/portainer.py inspect steinbergerraum-web-1
 python3 scripts/portainer.py inspect nginx 3
 ```
 
-**Filtering with `jq`** (full JSON can be large). The API returns one **object** (not an array):
+The full JSON output includes all container configuration, mounts, network settings, and state — identical to `docker inspect`. If you need to extract a specific field, pipe to `grep` or redirect to a file:
 
 ```bash
-python3 scripts/portainer.py inspect myapp 4 | jq '.NetworkSettings.Networks'
-python3 scripts/portainer.py inspect myapp 4 | jq '.Mounts'
-python3 scripts/portainer.py inspect myapp 4 | jq '.Config.Env'
+# Save full inspect output to a file
+python3 scripts/portainer.py inspect myapp 4 > inspect.json
+
+# Or grep for a specific key
+python3 scripts/portainer.py inspect myapp 4 | grep -A5 'NetworkSettings'
 ```
 
 **Errors:** If the container name is wrong or not on that endpoint, the script prints `✗ Container '…' not found` and exits non-zero.
