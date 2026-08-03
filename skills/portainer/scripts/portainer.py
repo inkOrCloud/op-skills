@@ -429,18 +429,18 @@ def cmd_image_delete(client, args):
 def cmd_image_prune(client, args):
     """Prune unused images."""
     ep = args.endpoint
-    if args.all:
-        filters = {"dangling": {"false": "true"}}
+    if str(args.all).lower() == "true":
+        filters = {"dangling": ["false"]}
         print(f"Pruning all unused images on endpoint {ep} ...")
     else:
-        filters = {"dangling": {"true": "true"}}
+        filters = {"dangling": ["true"]}
         print(f"Pruning dangling images on endpoint {ep} ...")
 
     filters_enc = urllib.parse.quote(json.dumps(filters))
     result = client.post(f"/endpoints/{ep}/docker/images/prune?filters={filters_enc}")
     reclaimed = result.get("SpaceReclaimed", 0) if result else 0
     deleted = len(
-        [x for x in (result or {}).get("ImagesDeleted", []) if x.get("Deleted")]
+        [x for x in (result or {}).get("ImagesDeleted") or [] if x.get("Deleted")]
     )
     reclaimed_mb = reclaimed / (1024 * 1024)
     print(f"✓ Deleted {deleted} image(s), reclaimed {reclaimed_mb:.1f} MB")
