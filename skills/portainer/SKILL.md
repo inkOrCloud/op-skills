@@ -1,7 +1,7 @@
 ---
 name: portainer
 description: Control Docker containers, stacks, and environments via Portainer API. List containers, start/stop/restart, view logs, inspect containers (docker inspect JSON), redeploy stacks from git, and manage environments (CRUD).
-version: 2.1.1
+version: 2.1.2
 platforms: [macos, linux]
 metadata:
   hermes:
@@ -284,6 +284,8 @@ python3 scripts/portainer.py exec host-fs-tool cp /data/backup.sql /data/archive
 python3 scripts/portainer.py container-create host-fs-tool busybox \
   --endpoint 3 --cmd "sleep infinity" --volume /host/logs:/data
 
+# --endpoint may be placed before or after the container name
+python3 scripts/portainer.py exec --endpoint 3 host-fs-tool cat /data/app.log
 python3 scripts/portainer.py exec host-fs-tool --endpoint 3 cat /data/app.log
 ```
 

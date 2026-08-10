@@ -90,7 +90,8 @@ Run any command inside a running container — equivalent to `docker exec`.
 # Run a command with default endpoint (4)
 python3 scripts/portainer.py exec <container> <command> [args...]
 
-# Specify endpoint
+# Specify endpoint (the flag may be placed before or after the container name)
+python3 scripts/portainer.py exec --endpoint 3 <container> <command> [args...]
 python3 scripts/portainer.py exec <container> --endpoint 3 <command> [args...]
 python3 scripts/portainer.py exec <container> -e 3 <command> [args...]
 ```
