@@ -787,11 +787,42 @@ def cmd_container_create(client, args):
         print(f"✓ Container '{args.name}' started")
 
 
+def _extract_exec_endpoint(exec_cmd, default_endpoint):
+    """Extract `--endpoint/-e` from the head of an exec command.
+
+    argparse.REMAINDER cannot parse options placed after the container
+    positional, so the documented form `<container> --endpoint N <command>`
+    arrives inside exec_cmd. Only the head is interpreted as an option;
+    once the actual command begins, remaining tokens are left untouched.
+    """
+    endpoint = default_endpoint
+    cmd = list(exec_cmd)
+    while cmd:
+        token = cmd[0]
+        if token in ("--endpoint", "-e"):
+            cmd.pop(0)
+            if not cmd:
+                sys.exit(f"error: argument {token}: expected one argument")
+            raw = cmd.pop(0)
+        elif token.startswith("--endpoint=") or token.startswith("-e="):
+            cmd.pop(0)
+            raw = token.partition("=")[2]
+        else:
+            break
+        try:
+            endpoint = int(raw)
+        except ValueError:
+            sys.exit(f"error: argument {token}: invalid int value: {raw!r}")
+    return endpoint, cmd
+
+
 def cmd_exec(client, args):
     """Run a command inside a container (docker exec)."""
-    if not args.exec_cmd:
-        sys.exit("Usage: portainer.py exec [--endpoint N] <container> <command> [args...]")
-    stdout, stderr = client.exec_run(args.endpoint, args.container, args.exec_cmd)
+    endpoint, exec_cmd = _extract_exec_endpoint(args.exec_cmd, args.endpoint)
+    if not exec_cmd:
+        sys.exit("Usage: portainer.py exec [--endpoint N] <container> "
+                 "[--endpoint N] <command> [args...]")
+    stdout, stderr = client.exec_run(endpoint, args.container, exec_cmd)
     if stdout:
         sys.stdout.buffer.write(stdout)
         sys.stdout.buffer.flush()
