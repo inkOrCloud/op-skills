@@ -757,7 +757,9 @@ def cmd_container_create(client, args):
             "RestartPolicy": {"Name": args.restart},
         },
     }
-    if args.network:
+    if args.network == "host":
+        config["HostConfig"]["NetworkMode"] = "host"
+    elif args.network:
         config["NetworkingConfig"] = {
             "EndpointsConfig": {args.network: {}}
         }

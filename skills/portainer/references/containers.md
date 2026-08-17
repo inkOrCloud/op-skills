@@ -137,7 +137,7 @@ python3 scripts/portainer.py container-create <name> <image> [options]
 | `--entrypoint` | `""` | Override entrypoint |
 | `--volume`, `-v` | `[]` | Volume mount, repeatable (`/host:/data`) |
 | `--env`, `-e` | `[]` | Environment variable, repeatable (`FOO=bar`) |
-| `--network` | `""` | Network to attach |
+| `--network` | `""` | Network to attach; use `host` for Docker host-network mode |
 | `--restart` | `"no"` | Restart policy: `no`, `always`, `unless-stopped`, `on-failure` |
 | `--no-start` | `false` | Create but do not start |
 | `--endpoint` | `4` | Endpoint ID |
@@ -156,6 +156,10 @@ python3 scripts/portainer.py container-create debug busybox \\
 python3 scripts/portainer.py container-create myapp myapp:latest \\
   --env DB_HOST=postgres --env DB_PORT=5432 \\
   --network mynet
+
+# Run in Docker host-network mode
+python3 scripts/portainer.py container-create sse-probe python:3.12-alpine \\
+  --network host --cmd "python -m http.server"
 
 # Create only (don't start)
 python3 scripts/portainer.py container-create myapp myapp:latest --no-start
