@@ -148,8 +148,8 @@ python3 scripts/portainer.py container-create <name> <image> [options]
 # Simple nginx
 python3 scripts/portainer.py container-create my-nginx nginx:latest --endpoint 3
 
-# Busybox with volume mount (file inspection)
-python3 scripts/portainer.py container-create debug busybox \\
+# Python Alpine with volume mount (file inspection)
+python3 scripts/portainer.py container-create debug python:alpine \\
   --cmd "sleep infinity" --volume /var/log:/data
 
 # With env vars and custom network

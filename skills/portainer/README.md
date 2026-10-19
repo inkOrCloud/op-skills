@@ -18,6 +18,7 @@
 
 | Version | Date | Changes |
 |---------|------|---------|
+| 2.1.3 | 2026-10-19 | **Documentation**: use `python:alpine` for host filesystem access guidance and volume-mount examples |
 | 2.1.2 | 2026-08-10 | **Bugfix**: `exec` now accepts `--endpoint`/`-e` after the container name, matching the documented syntax |
 | 2.1.1 | 2026-08-04 | **Bugfix**: fixed image-prune Docker filter payloads, handled empty `ImagesDeleted` responses, and restored dangling-only behavior by default |
 | 2.1.0 | 2026-07-29 | **Behavioral improvements**: added Agent Instructions section explicitly prohibiting raw curl/jq usage, enriched requires_toolsets with [python], removed jq examples from reference docs, added cross-platform note update |

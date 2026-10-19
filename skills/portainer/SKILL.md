@@ -1,7 +1,7 @@
 ---
 name: portainer
 description: Control Docker containers, stacks, and environments via Portainer API. List containers, start/stop/restart, view logs, inspect containers (docker inspect JSON), redeploy stacks from git, and manage environments (CRUD).
-version: 2.1.2
+version: 2.1.3
 platforms: [macos, linux]
 metadata:
   hermes:
@@ -264,11 +264,11 @@ export PORTAINER_API_KEY=ptr_your_token
 
 **Problem:** Containers cannot directly access the host filesystem (e.g., reading logs, editing configs, backing up data).
 
-**Solution:** Use `container-create` to launch a `busybox` container with host path mounts, then use `exec` to manipulate files.
+**Solution:** Use `container-create` to launch a `python:alpine` container with host path mounts, then use `exec` to manipulate files using shell commands or Python.
 
 ```bash
-# 1. Create a busybox container with host path mount (keep it running)
-python3 scripts/portainer.py container-create host-fs-tool busybox \
+# 1. Create a python:alpine container with host path mount (keep it running)
+python3 scripts/portainer.py container-create host-fs-tool python:alpine \
   --cmd "sleep infinity" \
   --volume /host/path:/data
 
@@ -281,7 +281,7 @@ python3 scripts/portainer.py exec host-fs-tool cp /data/backup.sql /data/archive
 **Specify endpoint:**
 
 ```bash
-python3 scripts/portainer.py container-create host-fs-tool busybox \
+python3 scripts/portainer.py container-create host-fs-tool python:alpine \
   --endpoint 3 --cmd "sleep infinity" --volume /host/logs:/data
 
 # --endpoint may be placed before or after the container name
